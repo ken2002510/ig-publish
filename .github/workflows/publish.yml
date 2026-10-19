@@ -1,0 +1,66 @@
+name: IG publish
+
+# Cloud publisher: runs on GitHub's servers, so no local computer is needed.
+# It checks every 15 minutes for posts that are due and publishes them,
+# then commits the updated state back to the repository.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Ignore the scheduled time and publish now"
+        type: boolean
+        default: false
+      dry_run:
+        description: "Only list what would be published"
+        type: boolean
+        default: false
+      max_posts:
+        description: "Max posts this run"
+        type: string
+        default: "2"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ig-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Publish due posts
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_GRAPH_VERSION: v26.0
+          VIDEO_BASE_URL: ${{ vars.VIDEO_BASE_URL }}
+          FORCE: ${{ inputs.force && '1' || '' }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+          MAX_POSTS: ${{ inputs.max_posts || '2' }}
+          DAILY_CAP: "6"
+        run: python scripts/publish_due.py
+
+      - name: Commit published state
+        if: ${{ !inputs.dry_run }}
+        run: |
+          if git diff --quiet -- posts; then
+            echo "no state change"
+            exit 0
+          fi
+          git config user.name "ig-publish-bot"
+          git config user.email "ig-publish-bot@users.noreply.github.com"
+          git add posts
+          git commit -m "chore: mark published posts [skip ci]"
+          git push
