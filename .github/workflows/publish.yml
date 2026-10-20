@@ -6,7 +6,8 @@ name: IG publish
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # GitHub 的排程可能延遲數分鐘；用 5 分鐘間隔，延遲的影響就很小。
+    - cron: "*/5 * * * *"
   workflow_dispatch:
     inputs:
       force:
