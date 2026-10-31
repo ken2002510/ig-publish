@@ -13,5 +13,8 @@
   "publish_time_iso": "2026-10-31T12:30:00+08:00",
   "publish_time_taipei": "2026-10-31 12:30",
   "video": "video.mp4",
-  "status": "pending"
+  "status": "published",
+  "media_id": "18147349423606585",
+  "published_at": "2026-10-31T12:34:01+08:00",
+  "published_by": "local"
 }
